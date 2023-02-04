@@ -26,7 +26,8 @@ SECRET_KEY = 'django-insecure-uk&kiuyaaucj@7x4biods)j49i(6$*$0s%$mr^2batv_mv&bcx
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['lessonsplan.azurewebsites.net']
+ALLOWED_HOSTS = ['lessonsplan.azurewebsites.net', 'https://nice-bay-03ddadf03.2.azurestaticapps.net']
+
 
 
 # Application definition
