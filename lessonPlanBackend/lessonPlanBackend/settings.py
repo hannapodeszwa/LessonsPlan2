@@ -110,10 +110,10 @@ DATABASES = {
 
 'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ['postgres'],
-        'HOST': hostname + ".postgres.database.azure.com",
-        'USER': os.environ['iwwcuanmsu'],
-        'PASSWORD': os.environ['2M1T17574MSR5GN1$'] 
+        'NAME': 'postgres',
+        'HOST': ".postgres.database.azure.com",
+        'USER': 'iwwcuanmsu',
+        'PASSWORD': '2M1T17574MSR5GN1$'
     }
 
 
