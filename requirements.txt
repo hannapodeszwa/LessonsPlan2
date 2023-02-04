@@ -2,3 +2,10 @@ Django
 psycopg2-binary
 python-dotenv
 whitenoise
+django-password-validators
+django-rest-swagger
+django-crispy-forms
+djangorestframework
+django-cors-headers
+drf-yasg
+six

@@ -111,7 +111,7 @@ DATABASES = {
 'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'postgres',
-        'HOST': ".postgres.database.azure.com",
+        'HOST': "lessonsplan-server.postgres.database.azure.com",
         'USER': 'iwwcuanmsu',
         'PASSWORD': '2M1T17574MSR5GN1$'
     }
