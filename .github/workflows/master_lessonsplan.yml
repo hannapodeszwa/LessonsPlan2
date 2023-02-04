@@ -60,4 +60,4 @@ jobs:
         with:
           app-name: 'lessonsplan'
           slot-name: 'Production'
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_6EB53F8BFFAB40B1955A7FB03B9C2D75 }}
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_1607851F953D4734982CDC4BC972DBBE }}
