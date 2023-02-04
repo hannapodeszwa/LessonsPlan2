@@ -10,6 +10,7 @@ from rest_framework.authtoken.models import Token
 class User(AbstractUser):
     secret = models.TextField(blank=True)
 
+
     def __str__(self):
         return self.username
 
