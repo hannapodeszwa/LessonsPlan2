@@ -1,0 +1,194 @@
+Index: lessonPlanBackend/urls.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>\"\"\"lessonPlanBackend URL Configuration\r\n\r\nThe `urlpatterns` list routes URLs to views. For more information please see:\r\n    https://docs.djangoproject.com/en/4.1/topics/http/urls/\r\nExamples:\r\nFunction views\r\n    1. Add an import:  from my_app import views\r\n    2. Add a URL to urlpatterns:  path('', views.home, name='home')\r\nClass-based views\r\n    1. Add an import:  from other_app.views import Home\r\n    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')\r\nIncluding another URLconf\r\n    1. Import the include() function: from django.urls import include, path\r\n    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))\r\n\"\"\"\r\nfrom django.contrib import admin\r\nfrom django.urls import path, re_path, include, reverse_lazy\r\nfrom django.views.generic import RedirectView, TemplateView\r\n\r\nfrom django.conf import settings\r\nfrom django.conf.urls.static import static\r\nfrom rest_framework.routers import DefaultRouter\r\nfrom users.views import UserViewSet, UserLogIn, UserCreate, ActivateUser, SecretView\r\nfrom rest_framework.authtoken import views\r\n\r\nrouter = DefaultRouter()\r\nrouter.register(r'users', UserViewSet)\r\n\r\nurlpatterns = [\r\n    path('register/', UserCreate.as_view()),\r\n\r\n    path('admin/', admin.site.urls),\r\n    path('api/v1/', include(router.urls), name='after_login'),\r\n    path('', TemplateView.as_view(template_name='base.html'), name='home'),\r\n    path('api-user-login/', UserLogIn.as_view()),\r\n    path('api-auth/', include('rest_framework.urls', namespace='rest_framework')),\r\n    path('', RedirectView.as_view(url='api-auth/login')),\r\n    re_path(r'^$', RedirectView.as_view(url=reverse_lazy('api-root'), permanent=False)),\r\n    path('', include('databaseApp.urls')),\r\n    path('activate/<uid>/<token>', ActivateUser.activate, name='activate'),\r\n    path('secret/', SecretView.get_secret, name='secret'),\r\n] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/lessonPlanBackend/urls.py b/lessonPlanBackend/urls.py
+--- a/lessonPlanBackend/urls.py	(revision fae234617851c82d330171935afe35ba81e12d2b)
++++ b/lessonPlanBackend/urls.py	(date 1674847924515)
+@@ -20,11 +20,31 @@
+ from django.conf import settings
+ from django.conf.urls.static import static
+ from rest_framework.routers import DefaultRouter
++
++
++from databaseApp import views
++
++import databaseApp
+ from users.views import UserViewSet, UserLogIn, UserCreate, ActivateUser, SecretView
+ from rest_framework.authtoken import views
++from rest_framework_swagger.views import get_swagger_view
++
++from rest_framework import permissions
++from drf_yasg.views import get_schema_view
++from drf_yasg import openapi
+ 
+ router = DefaultRouter()
+ router.register(r'users', UserViewSet)
++# schema_view = get_swagger_view(title='User API')
++
++schema_view = get_schema_view(
++    openapi.Info(
++    title="ABC",
++        default_version = 'v1',
++    ),
++    public=True,
++    permission_classes = (permissions.IsAuthenticated,),
++)
+ 
+ urlpatterns = [
+     path('register/', UserCreate.as_view()),
+@@ -39,4 +59,13 @@
+     path('', include('databaseApp.urls')),
+     path('activate/<uid>/<token>', ActivateUser.activate, name='activate'),
+     path('secret/', SecretView.get_secret, name='secret'),
++    path('schema/', schema_view.with_ui('swagger', cache_timeout=0),name='schema-swagger-ui'),
++
++    path('professors',databaseApp.views.getAllProfessors),
++    path(r'^professor/([0-9]+)$',databaseApp.views.getProfessor),
++    path(r'^groups$',databaseApp.views.getAllGroups),
++    path(r'^groups/([0-9]+)/lessons$',databaseApp.views.getLessonsByGroup.as_view()),
++    path(r'^lessons/([0-9]+)$',databaseApp.views.getLesson),
++    path(r'^lessons$',databaseApp.views.getAllLessons),
++    path(r'^professors/([0-9]+)/lessons$',databaseApp.views.getProfessorLessons),
+ ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+Index: users/views.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>from django.shortcuts import render, redirect\r\nfrom django.views.decorators.csrf import csrf_exempt\r\n\r\nfrom rest_framework import viewsets, generics, status\r\nfrom rest_framework.decorators import api_view, permission_classes\r\nfrom rest_framework.permissions import IsAuthenticated, AllowAny\r\nfrom rest_framework.authtoken.views import ObtainAuthToken\r\nfrom rest_framework.authtoken.models import Token\r\nfrom rest_framework.response import Response\r\nfrom rest_framework.views import APIView\r\n\r\nfrom .models import User\r\nfrom .serializers import UserSerializer\r\nfrom .tokens import account_activation_token\r\n\r\nclass SecretView(APIView):\r\n\r\n    @api_view(('GET',))\r\n    @permission_classes([IsAuthenticated])\r\n    def get_secret(request, format=None):\r\n        uid = request.user.pk\r\n\r\n        try:\r\n            user = User.objects.all().get(pk=uid)\r\n        except(TypeError, ValueError, OverflowError, User.DoesNotExist):\r\n            user = None\r\n\r\n        if user is not None:\r\n            status_code = status.HTTP_200_OK\r\n            response = {\r\n                'success': 'True',\r\n                'status code': status_code,\r\n                'secret': user.secret\r\n            }\r\n\r\n            return Response(response, status=status_code)\r\n\r\n        else:\r\n            status_code = status.HTTP_404_NOT_FOUND\r\n            response = {\r\n                'success': 'False',\r\n                'status code': status_code\r\n            }\r\n\r\n            return Response(response, status=status_code)\r\n\r\n\r\nclass UserViewSet(viewsets.ModelViewSet):\r\n    queryset = User.objects.all()\r\n    serializer_class = UserSerializer\r\n    permission_classes = [IsAuthenticated]\r\n\r\n\r\nclass UserLogIn(ObtainAuthToken):\r\n\r\n    #@csrf_exempt\r\n    def post(self, request, *args, **kwargs):\r\n        serializer = self.serializer_class(data=request.data,\r\n                                           context={'request': request})\r\n        serializer.is_valid(raise_exception=True)\r\n        user = serializer.validated_data['user']\r\n        token = Token.objects.get(user=user)\r\n        return Response({\r\n            'token': token.key,\r\n            'id': user.pk,\r\n            'username': user.username\r\n        })\r\n\r\n\r\nclass UserCreate(generics.CreateAPIView):\r\n    queryset = User.objects.all()\r\n    serializer_class = UserSerializer\r\n    permission_classes = (AllowAny, )\r\n\r\n    def post(self, request):\r\n        serializer = self.serializer_class(data=request.data)\r\n        serializer.is_valid(raise_exception=True)\r\n        user = serializer.save()\r\n        status_code = status.HTTP_201_CREATED\r\n        token = account_activation_token.make_token(user=user)\r\n        response = {\r\n            'success': 'True',\r\n            'status code': status_code,\r\n            'message': 'User registered  successfully',\r\n            'user': serializer.data,\r\n            'token': token\r\n        }\r\n\r\n        return Response(response, status=status_code)\r\n\r\n\r\nclass ActivateUser(APIView):\r\n\r\n    @api_view(('GET',))\r\n    @permission_classes([AllowAny])\r\n    def activate(self, uid, token):\r\n\r\n        try:\r\n            user = User.objects.all().get(pk=uid)\r\n        except(TypeError, ValueError, OverflowError, User.DoesNotExist):\r\n            user = None\r\n\r\n        if user is not None and account_activation_token.check_token(user, token):\r\n            user.is_active = True\r\n            user.save()\r\n\r\n            status_code = status.HTTP_200_OK\r\n            response = {\r\n                'success': 'True',\r\n                'status code': status_code,\r\n                'message': 'User activated  successfully'\r\n            }\r\n\r\n            return Response(response, status=status_code)\r\n\r\n        else:\r\n            status_code = status.HTTP_404_NOT_FOUND\r\n            response = {\r\n                'success': 'False',\r\n                'status code': status_code,\r\n                'message': 'User activated  error'\r\n             }\r\n\r\n            return Response(response, status=status_code)\r\n\r\n\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/users/views.py b/users/views.py
+--- a/users/views.py	(revision fae234617851c82d330171935afe35ba81e12d2b)
++++ b/users/views.py	(date 1674842864355)
+@@ -13,6 +13,7 @@
+ from .serializers import UserSerializer
+ from .tokens import account_activation_token
+ 
++
+ class SecretView(APIView):
+ 
+     @api_view(('GET',))
+Index: databaseApp/urls.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>from django.urls import re_path as url\r\nfrom databaseApp import views\r\n\r\nfrom django.conf.urls.static import static\r\nfrom django.conf import settings\r\n\r\nurlpatterns=[\r\n    url(r'^professors$',views.getAllProfessors),\r\n    url(r'^professor/([0-9]+)$',views.getProfessor),\r\n    url(r'^groups$',views.getAllGroups),\r\n    url(r'^groups/([0-9]+)/lessons$',views.getLessonsByGroup.as_view()),\r\n    url(r'^lessons/([0-9]+)$',views.getLesson),\r\n    url(r'^lessons$',views.getAllLessons),\r\n    url(r'^professors/([0-9]+)/lessons$',views.getProfessorLessons),\r\n]
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/databaseApp/urls.py b/databaseApp/urls.py
+--- a/databaseApp/urls.py	(revision fae234617851c82d330171935afe35ba81e12d2b)
++++ b/databaseApp/urls.py	(date 1674845517636)
+@@ -1,8 +1,21 @@
+ from django.urls import re_path as url
++from rest_framework import permissions
++
+ from databaseApp import views
+ 
+ from django.conf.urls.static import static
+ from django.conf import settings
++from drf_yasg.views import get_schema_view
++from drf_yasg import openapi
++
++schema_view = get_schema_view(
++    openapi.Info(
++    title="ABC",
++        default_version = 'v1',
++    ),
++    public=True,
++    permission_classes = (permissions.AllowAny,),
++)
+ 
+ urlpatterns=[
+     url(r'^professors$',views.getAllProfessors),
+@@ -12,4 +25,5 @@
+     url(r'^lessons/([0-9]+)$',views.getLesson),
+     url(r'^lessons$',views.getAllLessons),
+     url(r'^professors/([0-9]+)/lessons$',views.getProfessorLessons),
++    url(r'^schema2/', schema_view.with_ui('swagger', cache_timeout=0),name='schema-swagger-ui'),
+ ]
+\ No newline at end of file
+Index: lessonPlanBackend/settings.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>\"\"\"\r\nDjango settings for lessonPlanBackend project.\r\n\r\nGenerated by 'django-admin startproject' using Django 4.1.2.\r\n\r\nFor more information on this file, see\r\nhttps://docs.djangoproject.com/en/4.1/topics/settings/\r\n\r\nFor the full list of settings and their values, see\r\nhttps://docs.djangoproject.com/en/4.1/ref/settings/\r\n\"\"\"\r\n\r\nfrom pathlib import Path\r\nimport os\r\n\r\n# Build paths inside the project like this: BASE_DIR / 'subdir'.\r\nBASE_DIR = Path(__file__).resolve().parent.parent\r\n\r\n\r\n# Quick-start development settings - unsuitable for production\r\n# See https://docs.djangoproject.com/en/4.1/howto/deployment/checklist/\r\n\r\n# SECURITY WARNING: keep the secret key used in production secret!\r\nSECRET_KEY = 'django-insecure-uk&kiuyaaucj@7x4biods)j49i(6$*$0s%$mr^2batv_mv&bcx'\r\n\r\n# SECURITY WARNING: don't run with debug turned on in production!\r\nDEBUG = True\r\n\r\nALLOWED_HOSTS = []\r\n\r\n\r\n# Application definition\r\n\r\nINSTALLED_APPS = [\r\n    'django.contrib.admin',\r\n    'django.contrib.auth',\r\n    'django.contrib.contenttypes',\r\n    'django.contrib.sessions',\r\n    'django.contrib.messages',\r\n    'django.contrib.staticfiles',\r\n    #########\r\n    'crispy_forms',\r\n    'rest_framework',\r\n    'rest_framework.authtoken',\r\n    'corsheaders',\r\n    'databaseApp.apps.DatabaseappConfig',\r\n    'users',\r\n    'django_password_validators',\r\n    'django_password_validators.password_history',\r\n]\r\n\r\nCORS_ORIGIN_ALLOW_ALL = True\r\n\r\nMIDDLEWARE = [\r\n    'corsheaders.middleware.CorsMiddleware',\r\n    'django.middleware.security.SecurityMiddleware',\r\n    'django.contrib.sessions.middleware.SessionMiddleware',\r\n    'django.middleware.common.CommonMiddleware',\r\n    'django.middleware.csrf.CsrfViewMiddleware',\r\n    'django.contrib.auth.middleware.AuthenticationMiddleware',\r\n    'django.contrib.messages.middleware.MessageMiddleware',\r\n    'django.middleware.clickjacking.XFrameOptionsMiddleware',\r\n]\r\n\r\nROOT_URLCONF = 'lessonPlanBackend.urls'\r\n\r\nTEMPLATES = [\r\n    {\r\n        'BACKEND': 'django.template.backends.django.DjangoTemplates',\r\n        'DIRS': [BASE_DIR / \"api/v1/\"],\r\n        'APP_DIRS': True,\r\n        'OPTIONS': {\r\n            'context_processors': [\r\n                'django.template.context_processors.debug',\r\n                'django.template.context_processors.request',\r\n                'django.contrib.auth.context_processors.auth',\r\n                'django.contrib.messages.context_processors.messages',\r\n            ],\r\n        },\r\n    },\r\n]\r\n\r\nWSGI_APPLICATION = 'lessonPlanBackend.wsgi.application'\r\n\r\n\r\n# Database\r\n# https://docs.djangoproject.com/en/4.1/ref/settings/#databases\r\n\r\nDATABASES = {\r\n    # 'lessonsPlan': {\r\n    #     'ENGINE': 'mssql',\r\n    #     'NAME': 'LessonPlan',\r\n    #     \"Trusted_Connection\": 'Yes',\r\n    #      'HOST': \"LAPTOP-VTU4M002\\\\MSSQLSERVER01\",\r\n    #     #'HOST': \"DESKTOP-CF3D7AB\\\\SQLEXPRESS\",\r\n    #     \"OPTIONS\": {\"driver\": \"ODBC Driver 17 for SQL Server\",\r\n    #                 },\r\n    # },\r\n    # 'default': {\r\n    #     'ENGINE': 'django.db.backends.sqlite3',\r\n    #     'NAME': BASE_DIR / 'db.sqlite3',\r\n    #\r\n    # }\r\n\r\n'default': {\r\n        'ENGINE': 'mssql',\r\n        'NAME': 'LessonPlan',\r\n        \"Trusted_Connection\": 'Yes',\r\n        'HOST': \"LAPTOP-VTU4M002\\\\MSSQLSERVER01\",\r\n        \"OPTIONS\": {\"driver\": \"ODBC Driver 17 for SQL Server\",\r\n                    },\r\n    }\r\n\r\n\r\n}\r\n\r\n\r\n# Password validation\r\n# https://docs.djangoproject.com/en/4.1/ref/settings/#auth-password-validators\r\n\r\nAUTH_PASSWORD_VALIDATORS = [\r\n    {\r\n        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',\r\n    },\r\n    {\r\n        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',\r\n    },\r\n    {\r\n        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',\r\n    },\r\n    {\r\n        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',\r\n    },\r\n    {\r\n        'NAME': 'django_password_validators.password_history.password_validation.UniquePasswordsValidator',\r\n        'OPTIONS': {\r\n        }\r\n    },\r\n]\r\n\r\n\r\n# Internationalization\r\n# https://docs.djangoproject.com/en/4.1/topics/i18n/\r\n\r\nLANGUAGE_CODE = 'en-us'\r\n\r\nTIME_ZONE = 'UTC'\r\n\r\nUSE_I18N = True\r\n\r\nUSE_TZ = True\r\n\r\n\r\n# Static files (CSS, JavaScript, Images)\r\n# https://docs.djangoproject.com/en/4.1/howto/static-files/\r\n\r\nSTATIC_URL = 'static/'\r\n\r\n# Default primary key field type\r\n# https://docs.djangoproject.com/en/4.1/ref/settings/#default-auto-field\r\n\r\nDEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'\r\n\r\nLOGIN_REDIRECT_URL = \"home\"\r\nLOGOUT_REDIRECT_URL = \"home\"\r\n\r\nMEDIA_URL = '/media/'\r\nMEDIA_ROOT = os.path.join(BASE_DIR, 'media')\r\n\r\nREST_FRAMEWORK = {\r\n   'DEFAULT_PERMISSION_CLASSES': [\r\n       'rest_framework.permissions.IsAuthenticated',\r\n   ],\r\n   'DEFAULT_AUTHENTICATION_CLASSES': (\r\n       'rest_framework.authentication.SessionAuthentication',\r\n       'rest_framework.authentication.TokenAuthentication',\r\n   )\r\n}\r\n\r\nCORS_ALLOWED_ORIGINS = [\r\n   \"http://localhost:4200\",\r\n]\r\n\r\nAUTH_USER_MODEL = 'users.User'\r\n\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/lessonPlanBackend/settings.py b/lessonPlanBackend/settings.py
+--- a/lessonPlanBackend/settings.py	(revision fae234617851c82d330171935afe35ba81e12d2b)
++++ b/lessonPlanBackend/settings.py	(date 1674843107560)
+@@ -47,7 +47,11 @@
+     'users',
+     'django_password_validators',
+     'django_password_validators.password_history',
++    'rest_framework_swagger',
++    'drf_yasg'
+ ]
++
++REST_FRAMEWORK = { 'DEFAULT_SCHEMA_CLASS': 'rest_framework.schemas.coreapi.AutoSchema' }
+ 
+ CORS_ORIGIN_ALLOW_ALL = True
+ 
+Index: .idea/workspace.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<project version=\"4\">\r\n  <component name=\"AutoImportSettings\">\r\n    <option name=\"autoReloadType\" value=\"SELECTIVE\" />\r\n  </component>\r\n  <component name=\"ChangeListManager\">\r\n    <list default=\"true\" id=\"0bed8d02-c4e1-469e-9aae-8e4cf5862270\" name=\"Changes\" comment=\"fix Account activation response\">\r\n      <change beforePath=\"$PROJECT_DIR$/.idea/workspace.xml\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/.idea/workspace.xml\" afterDir=\"false\" />\r\n      <change beforePath=\"$PROJECT_DIR$/lessonPlanBackend/settings.py\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/lessonPlanBackend/settings.py\" afterDir=\"false\" />\r\n      <change beforePath=\"$PROJECT_DIR$/lessonPlanBackend/urls.py\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/lessonPlanBackend/urls.py\" afterDir=\"false\" />\r\n      <change beforePath=\"$PROJECT_DIR$/users/models.py\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/users/models.py\" afterDir=\"false\" />\r\n      <change beforePath=\"$PROJECT_DIR$/users/views.py\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/users/views.py\" afterDir=\"false\" />\r\n    </list>\r\n    <option name=\"SHOW_DIALOG\" value=\"false\" />\r\n    <option name=\"HIGHLIGHT_CONFLICTS\" value=\"true\" />\r\n    <option name=\"HIGHLIGHT_NON_ACTIVE_CHANGELIST\" value=\"false\" />\r\n    <option name=\"LAST_RESOLUTION\" value=\"IGNORE\" />\r\n  </component>\r\n  <component name=\"DjangoConsoleOptions\" custom-start-script=\"import sys; print('Python %s on %s' % (sys.version, sys.platform))&#10;import django; print('Django %s' % django.get_version())&#10;sys.path.extend([WORKING_DIR_AND_PYTHON_PATHS])&#10;if 'setup' in dir(django): django.setup()&#10;import django_manage_shell; django_manage_shell.run(PROJECT_ROOT)\">\r\n    <option name=\"myCustomStartScript\" value=\"import sys; print('Python %s on %s' % (sys.version, sys.platform))&#10;import django; print('Django %s' % django.get_version())&#10;sys.path.extend([WORKING_DIR_AND_PYTHON_PATHS])&#10;if 'setup' in dir(django): django.setup()&#10;import django_manage_shell; django_manage_shell.run(PROJECT_ROOT)\" />\r\n  </component>\r\n  <component name=\"FileTemplateManagerImpl\">\r\n    <option name=\"RECENT_TEMPLATES\">\r\n      <list>\r\n        <option value=\"Python Script\" />\r\n      </list>\r\n    </option>\r\n  </component>\r\n  <component name=\"Git.Settings\">\r\n    <option name=\"RECENT_GIT_ROOT_PATH\" value=\"$PROJECT_DIR$/..\" />\r\n  </component>\r\n  <component name=\"MarkdownSettingsMigration\">\r\n    <option name=\"stateVersion\" value=\"1\" />\r\n  </component>\r\n  <component name=\"ProjectId\" id=\"2GuVviIhODbxeM34iRVjwR5Q71z\" />\r\n  <component name=\"ProjectLevelVcsManager\" settingsEditedManually=\"true\" />\r\n  <component name=\"ProjectViewState\">\r\n    <option name=\"hideEmptyMiddlePackages\" value=\"true\" />\r\n    <option name=\"showLibraryContents\" value=\"true\" />\r\n  </component>\r\n  <component name=\"PropertiesComponent\">{\r\n  &quot;keyToString&quot;: {\r\n    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,\r\n    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,\r\n    &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,\r\n    &quot;last_opened_file_path&quot;: &quot;D:/studia/MAGISTER/2sem/Zaowir&quot;,\r\n    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,\r\n    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,\r\n    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,\r\n    &quot;settings.editor.selected.configurable&quot;: &quot;org.jetbrains.plugins.github.ui.GithubSettingsConfigurable&quot;,\r\n    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;\r\n  },\r\n  &quot;keyToStringList&quot;: {\r\n    &quot;DatabaseDriversLRU&quot;: [\r\n      &quot;sqlserver.localdb&quot;\r\n    ]\r\n  }\r\n}</component>\r\n  <component name=\"RunManager\">\r\n    <configuration name=\"lessonPlanBackend\" type=\"Python.DjangoServer\" factoryName=\"Django server\">\r\n      <module name=\"lessonPlanBackend\" />\r\n      <option name=\"INTERPRETER_OPTIONS\" value=\"\" />\r\n      <option name=\"PARENT_ENVS\" value=\"true\" />\r\n      <envs>\r\n        <env name=\"PYTHONUNBUFFERED\" value=\"1\" />\r\n        <env name=\"DJANGO_SETTINGS_MODULE\" value=\"lessonPlanBackend.settings\" />\r\n      </envs>\r\n      <option name=\"SDK_HOME\" value=\"\" />\r\n      <option name=\"WORKING_DIRECTORY\" value=\"\" />\r\n      <option name=\"IS_MODULE_SDK\" value=\"true\" />\r\n      <option name=\"ADD_CONTENT_ROOTS\" value=\"true\" />\r\n      <option name=\"ADD_SOURCE_ROOTS\" value=\"true\" />\r\n      <option name=\"launchJavascriptDebuger\" value=\"false\" />\r\n      <option name=\"port\" value=\"8000\" />\r\n      <option name=\"host\" value=\"\" />\r\n      <option name=\"additionalOptions\" value=\"\" />\r\n      <option name=\"browserUrl\" value=\"http://127.0.0.1:8000/\" />\r\n      <option name=\"runTestServer\" value=\"false\" />\r\n      <option name=\"runNoReload\" value=\"false\" />\r\n      <option name=\"useCustomRunCommand\" value=\"false\" />\r\n      <option name=\"customRunCommand\" value=\"\" />\r\n      <method v=\"2\" />\r\n    </configuration>\r\n  </component>\r\n  <component name=\"SpellCheckerSettings\" RuntimeDictionaries=\"0\" Folders=\"0\" CustomDictionaries=\"0\" DefaultDictionary=\"application-level\" UseSingleDictionary=\"true\" transferred=\"true\" />\r\n  <component name=\"TaskManager\">\r\n    <task active=\"true\" id=\"Default\" summary=\"Default task\">\r\n      <changelist id=\"0bed8d02-c4e1-469e-9aae-8e4cf5862270\" name=\"Changes\" comment=\"\" />\r\n      <created>1667238688680</created>\r\n      <option name=\"number\" value=\"Default\" />\r\n      <option name=\"presentableId\" value=\"Default\" />\r\n      <updated>1667238688680</updated>\r\n      <workItem from=\"1667238690476\" duration=\"2323000\" />\r\n      <workItem from=\"1667413015957\" duration=\"25000\" />\r\n      <workItem from=\"1673826865421\" duration=\"6698000\" />\r\n      <workItem from=\"1674122699351\" duration=\"4990000\" />\r\n      <workItem from=\"1674212152652\" duration=\"20683000\" />\r\n      <workItem from=\"1674652167360\" duration=\"28601000\" />\r\n    </task>\r\n    <task id=\"LOCAL-00001\" summary=\"FIX Registration and login\">\r\n      <created>1673878375525</created>\r\n      <option name=\"number\" value=\"00001\" />\r\n      <option name=\"presentableId\" value=\"LOCAL-00001\" />\r\n      <option name=\"project\" value=\"LOCAL\" />\r\n      <updated>1673878375525</updated>\r\n    </task>\r\n    <task id=\"LOCAL-00002\" summary=\"REST Registration and login\">\r\n      <created>1674249156141</created>\r\n      <option name=\"number\" value=\"00002\" />\r\n      <option name=\"presentableId\" value=\"LOCAL-00002\" />\r\n      <option name=\"project\" value=\"LOCAL\" />\r\n      <updated>1674249156141</updated>\r\n    </task>\r\n    <task id=\"LOCAL-00003\" summary=\"Password validation\">\r\n      <created>1674684715371</created>\r\n      <option name=\"number\" value=\"00003\" />\r\n      <option name=\"presentableId\" value=\"LOCAL-00003\" />\r\n      <option name=\"project\" value=\"LOCAL\" />\r\n      <updated>1674684715371</updated>\r\n    </task>\r\n    <task id=\"LOCAL-00004\" summary=\"Account activation\">\r\n      <created>1674731315117</created>\r\n      <option name=\"number\" value=\"00004\" />\r\n      <option name=\"presentableId\" value=\"LOCAL-00004\" />\r\n      <option name=\"project\" value=\"LOCAL\" />\r\n      <updated>1674731315117</updated>\r\n    </task>\r\n    <task id=\"LOCAL-00005\" summary=\"Account activation\">\r\n      <created>1674731514335</created>\r\n      <option name=\"number\" value=\"00005\" />\r\n      <option name=\"presentableId\" value=\"LOCAL-00005\" />\r\n      <option name=\"project\" value=\"LOCAL\" />\r\n      <updated>1674731514335</updated>\r\n    </task>\r\n    <task id=\"LOCAL-00006\" summary=\"Account activation response\">\r\n      <created>1674746653183</created>\r\n      <option name=\"number\" value=\"00006\" />\r\n      <option name=\"presentableId\" value=\"LOCAL-00006\" />\r\n      <option name=\"project\" value=\"LOCAL\" />\r\n      <updated>1674746653183</updated>\r\n    </task>\r\n    <task id=\"LOCAL-00007\" summary=\"fix Account activation response\">\r\n      <created>1674747845574</created>\r\n      <option name=\"number\" value=\"00007\" />\r\n      <option name=\"presentableId\" value=\"LOCAL-00007\" />\r\n      <option name=\"project\" value=\"LOCAL\" />\r\n      <updated>1674747845574</updated>\r\n    </task>\r\n    <option name=\"localTasksCounter\" value=\"8\" />\r\n    <servers />\r\n  </component>\r\n  <component name=\"TypeScriptGeneratedFilesManager\">\r\n    <option name=\"version\" value=\"3\" />\r\n  </component>\r\n  <component name=\"Vcs.Log.Tabs.Properties\">\r\n    <option name=\"TAB_STATES\">\r\n      <map>\r\n        <entry key=\"MAIN\">\r\n          <value>\r\n            <State />\r\n          </value>\r\n        </entry>\r\n      </map>\r\n    </option>\r\n  </component>\r\n  <component name=\"VcsManagerConfiguration\">\r\n    <MESSAGE value=\"FIX Registration and login\" />\r\n    <MESSAGE value=\"REST Registration and login\" />\r\n    <MESSAGE value=\"Password validation\" />\r\n    <MESSAGE value=\"Account activation\" />\r\n    <MESSAGE value=\"Account activation response\" />\r\n    <MESSAGE value=\"fix Account activation response\" />\r\n    <option name=\"LAST_COMMIT_MESSAGE\" value=\"fix Account activation response\" />\r\n  </component>\r\n  <component name=\"com.intellij.coverage.CoverageDataManagerImpl\">\r\n    <SUITE FILE_PATH=\"coverage/lessonPlanBackend$manage.coverage\" NAME=\"manage Coverage Results\" MODIFIED=\"1673030980567\" SOURCE_PROVIDER=\"com.intellij.coverage.DefaultCoverageFileProvider\" RUNNER=\"coverage.py\" COVERAGE_BY_TEST_ENABLED=\"true\" COVERAGE_TRACING_ENABLED=\"false\" WORKING_DIRECTORY=\"$PROJECT_DIR$\" />\r\n  </component>\r\n</project>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/workspace.xml b/.idea/workspace.xml
+--- a/.idea/workspace.xml	(revision fae234617851c82d330171935afe35ba81e12d2b)
++++ b/.idea/workspace.xml	(date 1675166539475)
+@@ -4,11 +4,11 @@
+     <option name="autoReloadType" value="SELECTIVE" />
+   </component>
+   <component name="ChangeListManager">
+-    <list default="true" id="0bed8d02-c4e1-469e-9aae-8e4cf5862270" name="Changes" comment="fix Account activation response">
++    <list default="true" id="0bed8d02-c4e1-469e-9aae-8e4cf5862270" name="Changes" comment="secret  endpoint">
+       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/databaseApp/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/databaseApp/urls.py" afterDir="false" />
+       <change beforePath="$PROJECT_DIR$/lessonPlanBackend/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/lessonPlanBackend/settings.py" afterDir="false" />
+       <change beforePath="$PROJECT_DIR$/lessonPlanBackend/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/lessonPlanBackend/urls.py" afterDir="false" />
+-      <change beforePath="$PROJECT_DIR$/users/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/users/models.py" afterDir="false" />
+       <change beforePath="$PROJECT_DIR$/users/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/users/views.py" afterDir="false" />
+     </list>
+     <option name="SHOW_DIALOG" value="false" />
+@@ -95,7 +95,7 @@
+       <workItem from="1673826865421" duration="6698000" />
+       <workItem from="1674122699351" duration="4990000" />
+       <workItem from="1674212152652" duration="20683000" />
+-      <workItem from="1674652167360" duration="28601000" />
++      <workItem from="1674652167360" duration="34284000" />
+     </task>
+     <task id="LOCAL-00001" summary="FIX Registration and login">
+       <created>1673878375525</created>
+@@ -146,7 +146,14 @@
+       <option name="project" value="LOCAL" />
+       <updated>1674747845574</updated>
+     </task>
+-    <option name="localTasksCounter" value="8" />
++    <task id="LOCAL-00008" summary="secret  endpoint">
++      <created>1674767185566</created>
++      <option name="number" value="00008" />
++      <option name="presentableId" value="LOCAL-00008" />
++      <option name="project" value="LOCAL" />
++      <updated>1674767185566</updated>
++    </task>
++    <option name="localTasksCounter" value="9" />
+     <servers />
+   </component>
+   <component name="TypeScriptGeneratedFilesManager">
+@@ -170,7 +177,8 @@
+     <MESSAGE value="Account activation" />
+     <MESSAGE value="Account activation response" />
+     <MESSAGE value="fix Account activation response" />
+-    <option name="LAST_COMMIT_MESSAGE" value="fix Account activation response" />
++    <MESSAGE value="secret  endpoint" />
++    <option name="LAST_COMMIT_MESSAGE" value="secret  endpoint" />
+   </component>
+   <component name="com.intellij.coverage.CoverageDataManagerImpl">
+     <SUITE FILE_PATH="coverage/lessonPlanBackend$manage.coverage" NAME="manage Coverage Results" MODIFIED="1673030980567" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
