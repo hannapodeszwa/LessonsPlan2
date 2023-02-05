@@ -33,7 +33,7 @@ ALLOWED_HOSTS = ['https://lessonsplan.azurewebsites.net',
 
 
 # Application definition
- 
+
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -52,9 +52,7 @@ INSTALLED_APPS = [
     'django_password_validators',
     'django_password_validators.password_history',
     'rest_framework_swagger',
-    'drf_yasg',
-    'django.contrib.staticfiles',
-    'angular',
+    'drf_yasg'
 ]
 
 REST_FRAMEWORK = { 'DEFAULT_SCHEMA_CLASS': 'rest_framework.schemas.coreapi.AutoSchema' }
