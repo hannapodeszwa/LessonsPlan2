@@ -26,7 +26,9 @@ SECRET_KEY = 'django-insecure-uk&kiuyaaucj@7x4biods)j49i(6$*$0s%$mr^2batv_mv&bcx
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['lessonsplan.azurewebsites.net', 'https://nice-bay-03ddadf03.2.azurestaticapps.net']
+ALLOWED_HOSTS = ['https://lessonsplan.azurewebsites.net',
+                 'lessonsplan.azurewebsites.net',
+                 'https://nice-bay-03ddadf03.2.azurestaticapps.net']
 
 
 
@@ -49,7 +51,9 @@ INSTALLED_APPS = [
     'django_password_validators',
     'django_password_validators.password_history',
     'rest_framework_swagger',
-    'drf_yasg'
+    'drf_yasg',
+    'django.contrib.staticfiles',
+    'angular',
 ]
 
 REST_FRAMEWORK = { 'DEFAULT_SCHEMA_CLASS': 'rest_framework.schemas.coreapi.AutoSchema' }
