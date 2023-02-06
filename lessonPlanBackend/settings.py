@@ -109,7 +109,7 @@ DATABASES = {
     
 
 'default': {
-        'ENGINE': 'mssql',
+        'ENGINE': 'django.db.backends.mysql',
         'NAME': 'sql7596199',
         'HOST': "sql7.freemysqlhosting.net",
         'USER': 'sql7596199',
