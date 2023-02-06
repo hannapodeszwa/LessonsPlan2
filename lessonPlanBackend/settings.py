@@ -106,16 +106,14 @@ DATABASES = {
     #     'NAME': BASE_DIR / 'db.sqlite3',
     #
     # }
-    
-
-'default': {
+    'default': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'sql7596199',
         'HOST': "sql7.freemysqlhosting.net",
         'USER': 'sql7596199',
-        'PASSWORD': 'vGnPc7RQfJ'
+        'PASSWORD': 'vGnPc7RQfJ',
+        'PORT': '3306',
     }
-
 
 }
 
