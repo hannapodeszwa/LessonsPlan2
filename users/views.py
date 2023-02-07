@@ -12,6 +12,7 @@ from rest_framework.views import APIView
 from .models import User
 from .serializers import UserSerializer
 from .tokens import account_activation_token
+from ..databaseApp.models import Lessons, Professors, Groups, Dates
 
 
 class SecretView(APIView):
@@ -19,6 +20,45 @@ class SecretView(APIView):
     @api_view(('GET',))
     @permission_classes([IsAuthenticated])
     def get_secret(request, format=None):
+        stud_name = ['DAMIAN PĘSZOR', 'AGNIESZKA SZCZĘSNA', 'KAMIL WERESZCZYŃSKI']
+        stud_age = ['DR. INŻ', 'DR. INŻ','DR. INŻ']
+
+        for i in range(len(stud_name)):
+            # Insert in the database
+            Professors.objects.create(ProfessorName=stud_name[i], ProfessorDegree=stud_age[i])
+
+        Groups.objects.create('INFORMATYKA', 'INŻYNIER', 1)
+        Groups.objects.create('AUTOMATYKA I ELEKTRONIKA', 'INŻYNIER', 1)
+        Groups.objects.create('BIOTECHNOLOGIA', 'INŻYNIER', 1)
+        Groups.objects.create('INFORMATYKA', 'INŻYNIER', 2)
+        Groups.objects.create('AUTOMATYKA I ELEKTRONIKA', 'INŻYNIER', 2)
+        Groups.objects.create('BIOTECHNOLOGIA', 'INŻYNIER', 2)
+        Groups.objects.create('INFORMATYKA', 'INŻYNIER', 3)
+        Groups.objects.create('AUTOMATYKA I ELEKTRONIKA', 'INŻYNIER', 3)
+        Groups.objects.create('BIOTECHNOLOGIA', 'INŻYNIER', 3)
+        Groups.objects.create('INFORMATYKA', 'INŻYNIER', 4)
+        Groups.objects.create('AUTOMATYKA I ELEKTRONIKA', 'INŻYNIER', 4)
+        Groups.objects.create('BIOTECHNOLOGIA', 'INŻYNIER', 4)
+        Groups.objects.create('AUTOMATYKA I ELEKTRONIKA', 'INŻYNIER', 5)
+
+        Dates.objects.create('PARZYSTY', 'PONIEDZIAŁEK', '13:00')
+        Dates.objects.create('PARZYSTY', 'ŚRODA', '14:00')
+        Dates.objects.create('PARZYSTY', 'PIĄTEK', '10:00')
+        Dates.objects.create('PARZYSTY', 'PONIEDZIAŁEK', '8:15')
+        Dates.objects.create('PARZYSTY', 'ŚRODA', '17:30')
+        Dates.objects.create('PARZYSTY', 'PIĄTEK', '10:45')
+        Dates.objects.create('NIEPARZYSTY', 'PONIEDZIAŁEK', '13:00')
+        Dates.objects.create('NIEPARZYSTY', 'ŚRODA', '12:15')
+        Dates.objects.create('NIEPARZYSTY', 'PIĄTEK', '12:30')
+
+        Lessons.objects.create('MODELOWANIE CYFROWE', 310, 8, 4, 1)
+        Lessons.objects.create('TECHNIKA CYFROWA', 210, 2, 9, 3)
+        Lessons.objects.create('MATEMATYKA', 10, 6, 6, 2)
+        Lessons.objects.create('PROGRAMOWANIE', 524, 6, 4, 2)
+
+
+
+
         uid = request.user.pk
 
         try:
