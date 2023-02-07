@@ -107,8 +107,7 @@ DATABASES = {
     #
     # }
 
-
-'default': {
+    'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'postgres',
         'HOST': "lessonsplan-server.postgres.database.azure.com",
