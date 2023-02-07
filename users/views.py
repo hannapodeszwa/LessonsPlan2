@@ -12,7 +12,6 @@ from rest_framework.views import APIView
 from .models import User
 from .serializers import UserSerializer
 from .tokens import account_activation_token
-from ..databaseApp.models import Lessons, Professors, Groups, Dates
 
 
 class SecretView(APIView):
