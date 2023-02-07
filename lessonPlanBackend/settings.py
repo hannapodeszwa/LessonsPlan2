@@ -89,7 +89,7 @@ WSGI_APPLICATION = 'lessonPlanBackend.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
-
+hostname = os.environ['DBHOST']
 
 DATABASES = {
     # 'lessonsPlan': {
@@ -106,14 +106,25 @@ DATABASES = {
     #     'NAME': BASE_DIR / 'db.sqlite3',
     #
     # }
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'sql7596199',
-        'HOST': "sql7.freemysqlhosting.net",
-        'USER': 'sql7596199',
-        'PASSWORD': 'vGnPc7RQfJ',
-        'PORT': '3306',
+
+
+'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'postgres',
+        'HOST': "lessonsplan-server.postgres.database.azure.com",
+        'USER': 'iwwcuanmsu',
+        'PASSWORD': '2M1T17574MSR5GN1$'
     }
+
+# 'default': {
+#         'ENGINE': 'django.db.backends.mysql',
+#         'NAME': 'sql7596199',
+#         'HOST': "sql7.freemysqlhosting.net",
+#         'USER': 'sql7596199',
+#         'PASSWORD': 'vGnPc7RQfJ',
+#         'PORT': '3306',
+#     }
+
 
 }
 
